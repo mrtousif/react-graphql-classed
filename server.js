@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
-const { ApolloServer } = require("apollo-server");
+const { ApolloServer, PubSub } = require("apollo-server");
 const typeDefs = require("./graphql/typeDefs");
 const resolvers = require("./graphql/resolvers");
 
@@ -14,6 +14,7 @@ process.on("uncaughtException", (err) => {
 
 dotenv.config();
 
+const pubsub = new PubSub();
 // const DB = process.env.DATABASE.replace("<PASSWORD>", process.env.DB_PASSWORD);
 
 const DB = process.env.LOCAL_DB;
@@ -26,7 +27,6 @@ mongoose
         useUnifiedTopology: true,
     })
     .then((con) => {
-        // console(con.connections);
         console.log("Database Connected");
     })
     .catch((err) => console.error("Database Connection Failure"));
@@ -34,6 +34,7 @@ mongoose
 const server = new ApolloServer({
     typeDefs,
     resolvers,
+    context: ({ req }) => ({ req, pubsub }),
 });
 
 server.listen().then(({ url }) => {

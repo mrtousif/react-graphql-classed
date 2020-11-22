@@ -1,6 +1,7 @@
-const mongoose = require("mongoose");
+const { Schema, model } = require("mongoose");
+// const Comment = require("../comment/comment.model");
 
-const postSchema = new mongoose.Schema(
+const postSchema = new Schema(
     {
         body: {
             type: String,
@@ -8,37 +9,27 @@ const postSchema = new mongoose.Schema(
         },
         user: {
             // ref to User
-            type: mongoose.Schema.Types.ObjectId,
+            type: Schema.Types.ObjectId,
             ref: "User",
             index: true,
         },
-        pageUrl: {
-            type: String,
-        },
-        userName: {
-            type: String,
-        },
-        comments: [
-            {
-                userName: String,
-                body: String,
-                createdAt: Date,
-            },
-        ],
-        likes: [
-            {
-                userName: String,
-                createdAt: String,
-            },
-        ],
-        replies: {
+        comments: {
             type: Number,
             default: 0,
-            min: 0,
         },
+        likes: {
+            type: Number,
+            default: 0,
+        },
+        websiteId: {
+            type: Schema.Types.ObjectId,
+            // ref: "Website"
+        },
+        createdAt: String,
+        updatedAt: String,
     },
     {
-        timestamps: true,
+        timestamps: { currentTime: () => new Date().toISOString() },
         toJSON: { virtuals: true },
         toObject: { virtuals: true },
     }
@@ -46,20 +37,20 @@ const postSchema = new mongoose.Schema(
 
 // commentSchema.index({ tour: 1, user: 1 }, { unique: true });
 
-// commentSchema.pre(/^find/, function (next) {
-//     // this.populate({
-//     //     path: 'tour',
-//     //     select: 'name'
-//     // }).populate({
-//     //     path: 'user',
-//     //     select: 'name photo'
-//     // });
-//     this.populate({
-//         path: 'user',
-//         select: 'name photo',
-//     });
-//     next();
-// });
+postSchema.pre(/^find/, function (next) {
+    // this.populate({
+    //     path: 'tour',
+    //     select: 'name'
+    // }).populate({
+    //     path: 'user',
+    //     select: 'name photo'
+    // });
+    this.populate({
+        path: "user",
+        select: "name photo",
+    });
+    next();
+});
 
 // // static method called on the model not document
 // commentSchema.statics.calcAvgRatings = async function (tourId) {
@@ -116,4 +107,4 @@ const postSchema = new mongoose.Schema(
 //     await this.r.constructor.calcAvgRatings(this.r.tour);
 // });
 
-module.exports = mongoose.model("Post", postSchema);
+module.exports = model("Post", postSchema);

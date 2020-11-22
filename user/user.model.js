@@ -7,7 +7,7 @@ const userSchema = new mongoose.Schema(
         name: {
             type: String,
             maxlength: 50,
-            required: [true, "Name is required"],
+            // required: [true, "Name is required"],
             trim: true,
         },
         email: {
@@ -58,20 +58,22 @@ const userSchema = new mongoose.Schema(
             type: Boolean,
             default: true,
         },
+        createdAt: String,
+        updatedAt: String,
     },
     {
-        timestamps: true,
+        timestamps: { currentTime: () => new Date().toISOString() },
     }
 );
 
 // instance method - it is available to all documents in a collection
-// userSchema.methods.correctPassword = async function (candidatePass, userPass) {
-//     // check if given login password is same as user password
-//     // candidatePass is not hashed but userPass is hashed
-//     // bcrypt takes care of that
-//     // returns true or false
-//     return await bcrypt.compare(candidatePass, userPass);
-// };
+userSchema.methods.correctPassword = async function (candidatePass, userPass) {
+    // check if given login password is same as user password
+    // candidatePass is not hashed but userPass is hashed
+    // bcrypt takes care of that
+    // returns true or false
+    return await bcrypt.compare(candidatePass, userPass);
+};
 
 userSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
     // if passwordChangedAt field exist then compare
