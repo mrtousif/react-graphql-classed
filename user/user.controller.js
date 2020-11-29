@@ -4,25 +4,25 @@ const jwt = require("jsonwebtoken");
 const User = require("./user.model");
 const Profile = require("../profile/profile.model");
 // const backblaze = require("./backblaze");
-const catchAsync = require("../utils/catchAsync");
 
 const { ValidationError, AuthenticationError } = require("apollo-server");
 
 // const downloadUrl = backblaze();
 // const Email = require("../utils/Email");
 
-const signToken = (userId) => {
-    const token = jwt.sign({ id: userId }, process.env.JWT_SECRET, {
+const signToken = (user) => {
+    const token = jwt.sign({ _id: user._id, name: user.name }, process.env.JWT_SECRET, {
         algorithm: "HS256",
         expiresIn: process.env.JWT_EXPIRES_IN, // validity of the token
     });
+
     return token;
 };
 
 const signAndSendToken = (user) => {
     if (!user) throw new Error("user is required");
 
-    const token = signToken(user._id);
+    const token = signToken(user);
     const cookieOptions = {
         expires: new Date(
             Date.now() + process.env.COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
@@ -61,10 +61,11 @@ exports.signup = async ({ name, email, password, confirmPassword }) => {
     if (user) {
         throw new ValidationError(
             "An account with that email is already exist. You can login or reset password."
-            // {
-            //     statusCode: 403,
-            // }
         );
+    }
+
+    if (password !== confirmPassword) {
+        throw new ValidationError("Password did not match");
     }
     // load new user data into the db
     const newUser = await User.create({
@@ -75,7 +76,7 @@ exports.signup = async ({ name, email, password, confirmPassword }) => {
     });
 
     await Profile.create({
-        userId: newUser._id,
+        user: newUser._id,
     });
 
     // send email
@@ -126,18 +127,16 @@ exports.protect = async (context) => {
     }
     // verify token and extract data
     const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
-    //decoded{ id: '---', iat: ---, exp: --- }
+    //decoded{ _id: '---', iat: ---, exp: --- }
     // check if user exists
-    const user = await User.findById(decoded.id);
+    const user = await User.findById(decoded._id);
     if (!user) {
         throw new AuthenticationError("Please login first");
     }
 
     // check if user has changed password after the token was issued
     if (user.changedPasswordAfter(decoded.iat)) {
-        throw new AuthenticationError(
-            "Password changed recently. Please login"
-        );
+        throw new AuthenticationError("Password changed recently. Please login");
     }
 
     // load user data to the request object
@@ -154,13 +153,10 @@ exports.isLoggedIn = async (req, res, next) => {
         }
         const token = req.cookies.token;
         // verify token and extract data
-        const decoded = await promisify(jwt.verify)(
-            token,
-            process.env.JWT_SECRET
-        );
-        //decoded{ id: '---', iat: ---, exp: --- }
+        const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
+        //decoded{ _id: '---', iat: ---, exp: --- }
         // check if user exists
-        const user = await User.findById(decoded.id);
+        const user = await User.findById(decoded._id);
         if (!user) {
             return next();
         }
@@ -236,10 +232,7 @@ exports.forgotPassword = async (req, res, next) => {
         user.resetTokenExpiresAt = undefined;
         await user.save({ validateBeforeSave: false });
 
-        throw new ValidationError(
-            "Failure to send email. Try again later",
-            500
-        );
+        throw new ValidationError("Failure to send email. Try again later", 500);
     }
 };
 
@@ -251,10 +244,7 @@ exports.resetPassword = async (req, res, next) => {
         throw new ValidationError("Invalid URL", 400);
     }
     // hash the token
-    const hashedToken = crypto
-        .createHash("sha256")
-        .update(resetToken)
-        .digest("hex");
+    const hashedToken = crypto.createHash("sha256").update(resetToken).digest("hex");
     // find user and check the token if it is expired
     const user = await User.findOne({
         passwordResetToken: hashedToken,
@@ -281,10 +271,7 @@ exports.updatePassword = async (req, res, next) => {
     const user = await User.findById(req.user.id).select("+password");
     // console.log(user);
     // verify current password
-    const checkPass = await user.correctPassword(
-        req.body.currentPassword,
-        user.password
-    );
+    const checkPass = await user.correctPassword(req.body.currentPassword, user.password);
     if (!checkPass) {
         throw new ValidationError("Incorrect password", 401);
     }

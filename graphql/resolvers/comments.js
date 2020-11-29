@@ -38,9 +38,7 @@ module.exports = {
                         },
                     });
                 }
-
                 const post = await postCtrl.getPost({ postId });
-
                 if (post) {
                     const comment = await commentCtrl.createComment({
                         postId,

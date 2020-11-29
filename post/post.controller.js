@@ -1,72 +1,76 @@
 const Post = require("./post.model");
+const PostLike = require("./postLike.model");
 const Profile = require("../profile/profile.model");
 // const Website = require("../website/website.model");
-const {
-    ValidationError,
-    UserInputError,
-    AuthenticationError,
-} = require("apollo-server");
+const { ValidationError, UserInputError, AuthenticationError } = require("apollo-server");
 
-const APIFeatures = require("../utils/APIFeatures");
+// const APIFeatures = require("../utils/APIFeatures");
 // const factory = require('./handlerFactory');
 
 exports.createPost = async ({ body, user }) => {
-    try {
-        // const { opinion, pageUrl } = req.body;
-        //check if websiteid exists
-        // get the user name
-        const newPost = await Post.create({
-            body,
-            user: user._id,
-            userName: user.name,
-        });
+    // const { opinion, pageUrl } = req.body;
+    //check if websiteid exists
+    // get the user name
+    const newPost = await Post.create({
+        body,
+        user: user._id,
+    });
 
-        // update user profile
-        await Profile.findOneAndUpdate(
-            { userId: user._id },
-            {
-                $push: { posts: newPost._id },
-            }
-        );
+    await newPost
+        .populate({
+            path: "user",
+            select: "name photo",
+        })
+        .execPopulate();
 
-        // const updateProfile = await Profile.
+    // update user profile
+    await Profile.findOneAndUpdate(
+        { userId: user._id },
+        {
+            $push: { posts: newPost._id },
+        }
+    );
 
-        return newPost;
-    } catch (error) {
-        return error;
-    }
+    // const updateProfile = await Profile.
+
+    return newPost;
 };
 
 exports.likePost = async ({ postId, user }) => {
-    let likedPost;
+    // let likedPost;
     // liked = true;
     // get user profile
-    const profile = await Profile.findOne({ userId: user._id });
+    const likedPost = await PostLike.findOne({ userId: user._id, postId: postId });
+    // const profile = await Profile.findOne({ userId: user._id });
+
     // get post
     const post = await this.getPost({ postId });
     // check if post is already liked
-    likedPost = profile.likedPosts.filter((post) => `${post}` === `${postId}`);
+    // likedPost = profile.likedPosts.filter((post) => `${post}` === `${postId}`);
+
     let updatedPost;
     // post is not liked
-    if (likedPost.length === 0) {
+    if (!likedPost) {
+        // profile.likedPosts.push(postId);
+        await PostLike.create({ userId: user._id, postId: postId });
+
         post.likes = post.likes + 1;
         updatedPost = await post.save();
-
-        profile.likedPosts.push(postId);
-
-        await profile.save();
+        // await profile.save();
     } else {
         // post is already liked
+        await PostLike.deleteOne({ userId: user._id, postId: postId });
+
         post.likes = post.likes - 1;
         updatedPost = await post.save();
 
-        const index = profile.likedPosts.indexOf(postId);
-        if (index > -1) {
-            profile.likedPosts.splice(index, 1);
-        }
-        // updatedProfile = profile.likedPosts.filter((item) => item !== value);
+        // const index = profile.likedPosts.indexOf(postId);
+        // if (index > -1) {
+        //     profile.likedPosts.splice(index, 1);
+        // }
+        // // updatedProfile = profile.likedPosts.filter((item) => item !== value);
 
-        await profile.save();
+        // await profile.save();
     }
     return updatedPost;
 };
@@ -101,6 +105,7 @@ exports.deletePost = async ({ postId, user }) => {
 
     if (`${doc.user._id}` === `${user._id}`) {
         await Post.findByIdAndDelete(postId);
+        await PostLike.deleteMany({ postId: postId });
         await Profile.findOneAndUpdate(
             { userId: user._id },
             {

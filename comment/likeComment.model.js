@@ -1,30 +1,22 @@
 const { Schema, model } = require("mongoose");
 // const Comment = require("../comment/comment.model");
 
-const postSchema = new Schema(
+const likeCommentSchema = new Schema(
     {
-        body: {
-            type: String,
-            maxlength: 10000,
-            trim: true,
-        },
-        user: {
-            // ref to User
+        userId: {
             type: Schema.Types.ObjectId,
             ref: "User",
             index: true,
         },
-        comments: {
-            type: Number,
-            default: 0,
-        },
-        likes: {
-            type: Number,
-            default: 0,
-        },
-        websiteId: {
+        commentId: {
             type: Schema.Types.ObjectId,
-            // ref: "Website"
+            ref: "Comment",
+            index: true,
+        },
+        feeling: {
+            type: String,
+            enum: ["liked", "disliked"],
+            default: "liked"
         },
         createdAt: String,
         updatedAt: String,
@@ -38,20 +30,6 @@ const postSchema = new Schema(
 
 // commentSchema.index({ tour: 1, user: 1 }, { unique: true });
 
-postSchema.pre(/^find/, function (next) {
-    // this.populate({
-    //     path: 'tour',
-    //     select: 'name'
-    // }).populate({
-    //     path: 'user',
-    //     select: 'name photo'
-    // });
-    this.populate({
-        path: "user",
-        select: "name photo",
-    });
-    next();
-});
 
 // // static method called on the model not document
 // commentSchema.statics.calcAvgRatings = async function (tourId) {
@@ -108,4 +86,4 @@ postSchema.pre(/^find/, function (next) {
 //     await this.r.constructor.calcAvgRatings(this.r.tour);
 // });
 
-module.exports = model("Post", postSchema);
+module.exports = model("LikePost", likeCommentSchema);

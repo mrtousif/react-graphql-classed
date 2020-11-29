@@ -14,9 +14,7 @@ module.exports = {
             return parent.likes.length;
         },
 
-        commentCount: (parent) => {
-            parent.comments.length;
-        },
+        commentCount: (parent) => parent.comments.length,
     },
 
     Query: {

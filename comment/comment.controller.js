@@ -18,7 +18,7 @@ exports.createComment = async ({ postId, body, user }) => {
     });
     // update user profile
     await Profile.findOneAndUpdate(
-        { userId: user._id },
+        { user: user._id },
         {
             $push: { comments: newComment._id },
         }
@@ -34,7 +34,7 @@ exports.createComment = async ({ postId, body, user }) => {
 exports.likeComment = async ({ commentId, user }) => {
     let likedComment;
     // get user profile
-    const profile = await Profile.findOne({ userId: user._id });
+    const profile = await Profile.findOne({ user: user._id });
     // get comment
     const comment = await this.getComment({ commentId });
     // check if post is already liked
@@ -98,7 +98,7 @@ exports.deleteComment = async ({ commentId, user }) => {
     if (`${doc.user._id}` === `${user._id}`) {
         await Comment.findByIdAndDelete(commentId);
         await Profile.findOneAndUpdate(
-            { userId: user._id },
+            { user: user._id },
             {
                 $pull: { comments: commentId },
             }

@@ -23,8 +23,14 @@ const typeDefs = gql`
         _id: ID!
         body: String!
         user: ID!
-        postId: ID
-        createdAt: String!
+        comments: Int!
+        likes: Int!
+        createdAt: DateTime!
+    }
+
+    type LikedPost {
+        userId: ID!
+        postId: ID!
     }
 
     type Comment {
@@ -34,21 +40,21 @@ const typeDefs = gql`
         user: User
         likes: Int
         replies: Int
-        createdAt: String!
+        createdAt: DateTime!
     }
 
     type NewComment {
         _id: ID!
         body: String!
         user: ID!
-        createdAt: String!
+        createdAt: DateTime!
     }
 
     type Like {
         _id: ID!
         user: ID
         userName: String
-        createdAt: String!
+        createdAt: DateTime!
     }
 
     type User {
@@ -86,10 +92,11 @@ const typeDefs = gql`
         getPost(postId: ID!): Post!
         getComments(postId: ID!): [Comment]!
         getProfile(userId: ID!): Profile!
+        getLikedPosts(userId: ID!): [LikedPost]
     }
 
     type Mutation {
-        register(
+        signup(
             name: String!
             email: EmailAddress!
             password: String!
@@ -98,9 +105,9 @@ const typeDefs = gql`
 
         login(email: EmailAddress!, password: String!): AuthUser!
 
-        createPost(body: String!): NewPost!
+        createPost(body: String!): Post!
         deletePost(postId: ID!): String
-        updatePost(postId: ID!, body: String): Post!
+        updatePost(postId: ID!, body: String): NewPost!
         likePost(postId: ID!): Post
 
         createComment(postId: ID!, body: String!): NewComment!

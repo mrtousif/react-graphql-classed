@@ -3,7 +3,7 @@ const userCtrl = require("../../user/user.controller");
 
 module.exports = {
     Mutation: {
-        register: async (_, args, ctx, info) => {
+        signup: async (_, args, ctx, info) => {
             const { name, email, password, confirmPassword } = args;
 
             const createdUser = await userCtrl.signup({

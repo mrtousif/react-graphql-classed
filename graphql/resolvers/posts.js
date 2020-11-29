@@ -1,5 +1,6 @@
 const PostCtrl = require("../../post/post.controller");
 const UserCtrl = require("../../user/user.controller");
+const PostLike = require("../../post/postLike.model");
 // const { AuthenticationError } = require("apollo-server");
 
 module.exports = {
@@ -25,6 +26,16 @@ module.exports = {
                 throw new Error(error);
             }
         },
+
+        getLikedPosts: async (_, args, ctx) => {
+            try {
+                const { userId } = args;
+                const likedPosts = await PostLike.find({ userId: userId });
+                return likedPosts;
+            } catch (error) {
+                throw new Error(error);
+            }
+        },
     },
 
     Mutation: {
@@ -34,7 +45,6 @@ module.exports = {
                 const user = await UserCtrl.protect(context);
 
                 const post = await PostCtrl.createPost({ body, user });
-
                 context.pubsub.publish("NEW_POST", {
                     newPost: post,
                 });
